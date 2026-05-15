@@ -1,21 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-LC_heatMap.py  ―  SD3.5 版（对齐 LC_heatMap_flux.py 结构）
-
-依赖：
-  sd35/based_stepwise_sd.py  →  SD35GeometricAnalyzer
-    提供：encode_prompt_cfg, F_sampling_latents_cfg_embeds,
-          compute_Jsub_and_V1_F, get_laplacian_kernel
-
-用法：
-  单卡：
-    python LC_heatMap.py
-
-  多卡（torchrun）：
-    torchrun --nproc_per_node=N LC_heatMap.py
-"""
-
 import os
 import csv
 import math
@@ -32,7 +16,7 @@ import torch
 import torch.nn.functional as F
 import torch.distributed as dist
 
-# SD35 base class (provides model loading, encode_prompt_cfg, F_sampling_latents_cfg_embeds, etc.)
+# SD35 base class
 from sd35.based_stepwise_sd import SD35GeometricAnalyzer, get_laplacian_kernel
 
 
@@ -134,16 +118,11 @@ def make_grid_2x2(img00, img01, img10, img11):
 # -------------------------
 class SD35SpatialMapper(SD35GeometricAnalyzer):
     """
-    生成 LS_map / LC_map / PHFE_map（与 LC_heatMap_flux.py 的 FluxSpatialMapper 对齐）。
-
-    继承 SD35GeometricAnalyzer，复用：
-      - encode_prompt_cfg
-      - F_sampling_latents_cfg_embeds
-      - compute_Jsub_and_V1_F
+    Generating LS_map / LC_map / PHFE_map
     """
 
     # ------------------------------------------------------------------
-    # 核心计算：compute_maps_fullF
+    # compute_maps_fullF
     # ------------------------------------------------------------------
     @torch.no_grad()
     def compute_maps_fullF(
@@ -160,19 +139,19 @@ class SD35SpatialMapper(SD35GeometricAnalyzer):
         fd_batch_size: int          = 4,
     ) -> dict:
         """
-        返回 dict（与 FluxSpatialMapper.compute_maps_fullF 对齐）：
+        Returns dict:
           LS, LC, PHFE, Axis_Cos,
           LS_map  (H_lat, W_lat)  np.ndarray
           LC_map  (H_lat, W_lat)  np.ndarray
           PHFE_map (H_lat, W_lat) np.ndarray
         """
         dev  = self.device
-        # ---- 随机低维子空间 ----
+        # ---- random low-dimensional subspace ----
         z_dim = z.numel()                                              # 16*64*64
         Q, _  = torch.linalg.qr(torch.randn(z_dim, D_low, device=dev, dtype=torch.float32))
         W_sub = Q[:, :D_low]                                          # (D, D_low)
 
-        # ---- center 输出 & J_sub ----
+        # ---- center output & J_sub ----
         out_center, J_unpacked_stack, V1_low, LS = self._compute_center_and_Jsub(
             z, pos_c, neg_c, pos_p, neg_p, W_sub, epsilon, num_inference_steps_F, guidance_scale_F, fd_batch_size
         )
@@ -239,7 +218,7 @@ class SD35SpatialMapper(SD35GeometricAnalyzer):
         }
 
     # ------------------------------------------------------------------
-    # 内部辅助：运行 F_sampling + 有限差分建 J_sub（与 based_stepwise_sd 对齐）
+    # Helper function: Run F_sampling + finite difference to build J_sub
     # ------------------------------------------------------------------
     @torch.no_grad()
     def _compute_center_and_Jsub(
@@ -253,16 +232,15 @@ class SD35SpatialMapper(SD35GeometricAnalyzer):
         fd_batch_size: int,
     ):
         """
-        返回:
+        Returns:
           out_center      (1,C,H,W)  float32
-          J_unpacked_stack (D_low,C,H,W) float32   — 各扰动方向的输出差
+          J_unpacked_stack (D_low,C,H,W) float32   — output difference for each perturbation direction
           V1_low          (D_low,)   float32
           LS              float
         """
         D_low  = W_sub.shape[1]
         dev    = self.device
 
-        # center 输出
         out_center = self.F_sampling_latents_cfg_embeds(
             z_center, pos_c, neg_c, pos_p, neg_p,
             num_inference_steps=num_inference_steps,
@@ -301,7 +279,7 @@ class SD35SpatialMapper(SD35GeometricAnalyzer):
         return out_center, J_unpacked_stack, V1_low, LS
 
     # ------------------------------------------------------------------
-    # 主入口：analyze_and_map（对齐 FluxSpatialMapper.analyze_and_map）
+    # analyze_and_map
     # ------------------------------------------------------------------
     @torch.no_grad()
     def analyze_and_map(
@@ -324,14 +302,7 @@ class SD35SpatialMapper(SD35GeometricAnalyzer):
         viz_steps: int            = 28,
         viz_guidance_scale: float = 7.0,
     ):
-        """
-        保存：
-          {label}_S{seed}_LS{...}_LC{...}_PHFE{...}-seed={seed}.png
-          {label}_S{seed}_... -seed={seed}_ls.png
-          {label}_S{seed}_... -seed={seed}_lc.png
-          {label}_S{seed}_... -seed={seed}_phfe.png
-          [可选] .npz
-        """
+
         os.makedirs(outdir, exist_ok=True)
         set_seed(seed)
 
@@ -404,7 +375,7 @@ class SD35SpatialMapper(SD35GeometricAnalyzer):
 
 
 # -------------------------
-# prompt-pairs loader（与 LC_heatMap_flux.py 相同）
+# prompt-pairs loader
 # -------------------------
 def load_prompt_pairs_tsv(path: str):
     """
@@ -483,11 +454,7 @@ def main_single(normal_prompt: str, ood_prompt: str):
 
 
 def main_pairs(prompt_file: str, base_outdir: str, seeds_small=None):
-    """
-    对齐 LC_heatMap_flux.py 的目录结构：
-      base_outdir/pair_XX/ID/rank_XX/*.png|npz
-      base_outdir/pair_XX/OOD/rank_XX/*.png|npz
-    """
+
     mapper = SD35SpatialMapper(
         model_id="stabilityai/stable-diffusion-3.5-medium",
         device=device,
@@ -535,12 +502,12 @@ def main_pairs(prompt_file: str, base_outdir: str, seeds_small=None):
 
 
 if __name__ == "__main__":
-    # --- 方式 A：单对 ID/OOD prompt 测试 ---
+    # --- A: single ID/OOD prompt test ---
     # normal_prompt = "A freshwater fish swimming underwater in a river, silver scales, flowing fins, natural aquatic environment with plants, sunlight filtering through water, photorealistic"
     # ood_prompt    = "A fish with four muscular legs walking on sand in a desert, resembling a salamander but with fish scales and fins, speculative biology concept, photorealistic, midday sun, clear shadows."
     # main_single(normal_prompt, ood_prompt)
 
-    # --- 方式 B：完整跑 pair ---
+    # --- B: full run ---
     prompt_file = "./ood_id_prompt_pairs_3.txt"
     base_outdir = "./main_output_sd35"
     main_pairs(prompt_file, base_outdir, seeds_small=list(range(100)))
@@ -551,10 +518,10 @@ if __name__ == "__main__":
 
 
 """
-使用指南：
-  单卡：
-    python LC_heatMap.py
+Usage Guide:
+  Single-GPU:
+    python Geometry_Diffusion.py
 
-  多卡：
-    torchrun --nproc_per_node=N LC_heatMap.py
+  Multi-GPU:
+    torchrun --nproc_per_node=N Geometry_Diffusion.py
 """

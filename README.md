@@ -37,11 +37,10 @@ torchrun --nproc_per_node=N Geometry_Diffusion.py
 ```
 
 The script will read prompts (from `ood_id_prompt_pairs_x.txt`), iteratively solve for the local geometric properties, and output:
-- Raw image generation (`-seed={seed}.png`)
-- Local Scaling map (`_ls.png`)
-- Local Complexity map (`_lc.png`)
-- Persistent Homology Feature Entropy map (`_phfe.png`)
-- Compressed Numpy arrays (`.npz`) containing the raw map tensors for downstream statistical analysis.
+- Compressed Numpy arrays (`.npz`) containing the raw map tensors (LS_map, LC_map, PHFE_map) and metrics (LS, LC, PHFE, Axis_Cos) for downstream statistical analysis.
+- (Optional) If enabled, it can also output raw image generations and individual heatmaps for Local Scaling, Local Complexity, and Persistent Homology Feature Entropy.
+
+Additionally, the `sd35/based_stepwise_sd.py` script computes metrics directly and outputs `metrics_rank{rank}.csv` and JSON reports, alongside generated sample images.
 
 ## Requirements
 
