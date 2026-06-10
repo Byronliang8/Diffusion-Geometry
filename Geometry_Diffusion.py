@@ -349,9 +349,8 @@ class SD35SpatialMapper(SD35GeometricAnalyzer):
 
         # save
         base     = f"{label}_S{seed}_LS{metrics['LS']:.3f}_LC{metrics['LC']:.3f}_PHFE{metrics['PHFE']:.3f}"
+        png_path = os.path.join(outdir, base)
         if save_image:
-            png_path = os.path.join(outdir, base)
-
             img.save(   png_path + f"-seed={seed}.png")
             ls_img.save(png_path + f"-seed={seed}_ls.png")
             lc_img.save(png_path + f"-seed={seed}_lc.png")
@@ -503,14 +502,14 @@ def main_pairs(prompt_file: str, base_outdir: str, seeds_small=None):
 
 if __name__ == "__main__":
     # --- A: single ID/OOD prompt test ---
-    # normal_prompt = "A freshwater fish swimming underwater in a river, silver scales, flowing fins, natural aquatic environment with plants, sunlight filtering through water, photorealistic"
-    # ood_prompt    = "A fish with four muscular legs walking on sand in a desert, resembling a salamander but with fish scales and fins, speculative biology concept, photorealistic, midday sun, clear shadows."
-    # main_single(normal_prompt, ood_prompt)
+    normal_prompt = "A freshwater fish swimming underwater in a river, silver scales, flowing fins, natural aquatic environment with plants, sunlight filtering through water, photorealistic"
+    ood_prompt    = "A fish with four muscular legs walking on sand in a desert, resembling a salamander but with fish scales and fins, speculative biology concept, photorealistic, midday sun, clear shadows."
+    main_single(normal_prompt, ood_prompt)
 
-    # --- B: full run ---
-    prompt_file = "./ood_id_prompt_pairs_3.txt"
-    base_outdir = "./main_output_sd35"
-    main_pairs(prompt_file, base_outdir, seeds_small=list(range(100)))
+    # # --- B: full run ---
+    # prompt_file = "./ood_id_prompt_pairs_3.txt"
+    # base_outdir = "./main_output_sd35"
+    # main_pairs(prompt_file, base_outdir, seeds_small=list(range(100)))
 
     if world > 1 and dist.is_initialized():
         dist.barrier()
