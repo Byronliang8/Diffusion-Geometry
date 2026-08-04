@@ -55,7 +55,7 @@ conda env create -f environment.yml
 conda activate geo_diffusion
 ```
 
-## Reference
+## Citation
 
 ```
 @inproceedings{
