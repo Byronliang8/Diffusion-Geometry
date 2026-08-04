@@ -54,3 +54,15 @@ Key requirements include:
 conda env create -f environment.yml
 conda activate geo_diffusion
 ```
+
+## Reference
+
+```
+@inproceedings{
+liang2026geometric,
+title={Geometric Decoupling: Diagnosing the Structural Instability of Latent},
+author={Yuanbang Liang and Zhengwen Chen and Yu-Kun Lai},
+booktitle={Forty-third International Conference on Machine Learning},
+year={2026},
+}
+```
