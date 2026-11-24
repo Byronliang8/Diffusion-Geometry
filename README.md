@@ -2,6 +2,8 @@
 
 Latent Diffusion Models (LDMs) achieve high-fidelity synthesis but suffer from latent space brittleness, causing discontinuous semantic jumps during editing. We introduce a Riemannian framework to diagnose this instability by analyzing the generative Jacobian, decomposing geometry into Local Scaling (capacity) and Local Complexity (curvature). Our study uncovers a Geometric Decoupling: while curvature in normal generation functionally encodes image detail, OOD generation exhibits a functional decoupling where extreme curvature is wasted on unstable semantic boundaries rather than perceptible details. This geometric misallocation identifies Geometric Hotspots as the structural root of instability, providing a robust intrinsic metric for diagnosing generative reliability.
 
+paper: https://proceedings.mlr.press/v306/liang26d.html
+
 ## Overview
 
 The core of this research is measuring how tiny perturbations in the latent noise vector $z$ influence the diffusion model's generation trajectory. It extracts these properties using randomized low-dimensional subspace projections and finite difference approximations.
